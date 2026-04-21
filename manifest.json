@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Retro YT Music Player",
+  "version": "0.4.0",
+  "description": "Overlays YouTube Music with a retro stereo-style player skin. Toggle via toolbar icon, compact mode shrinks the window.",
+  "permissions": ["scripting", "storage"],
+  "host_permissions": ["https://music.youtube.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Retro YT Music Player"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://music.youtube.com/*"],
+      "js": ["content.js"],
+      "css": ["overlay.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["main-world.js"],
+      "matches": ["https://music.youtube.com/*"]
+    }
+  ]
+}

@@ -1,0 +1,390 @@
+#retro-ytmp {
+  position: fixed;
+  top: 88px;
+  right: 24px;
+  width: 320px;
+  z-index: 2147483647;
+  font-family: ui-monospace, 'SF Mono', Menlo, Monaco, 'Cascadia Mono', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  background:
+    linear-gradient(180deg, #5a5a5a 0%, #3a3a3a 50%, #2a2a2a 100%);
+  border: 2px solid #0a0a0a;
+  border-radius: 4px;
+  box-shadow:
+    inset 1px 1px 0 #8a8a8a,
+    inset -1px -1px 0 #151515,
+    0 10px 28px rgba(0, 0, 0, 0.6);
+  color: #e0e0e0;
+  user-select: none;
+  line-height: 1;
+}
+
+#retro-ytmp.retro-ytmp-dragging {
+  opacity: 0.95;
+}
+
+#retro-ytmp * {
+  box-sizing: border-box;
+}
+
+.retro-ytmp-titlebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background:
+    linear-gradient(180deg, #000077 0%, #0000cc 40%, #000077 100%);
+  padding: 5px 8px;
+  cursor: move;
+  border-bottom: 1px solid #000;
+  box-shadow: inset 0 -1px 0 #000;
+}
+
+.retro-ytmp-title {
+  color: #d0d0d0;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 2px;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.retro-ytmp-winbtns {
+  display: flex;
+  gap: 4px;
+}
+
+.retro-ytmp-compact,
+.retro-ytmp-close {
+  background: linear-gradient(180deg, #d0d0d0, #9a9a9a);
+  border: 1px solid #000;
+  box-shadow: inset 1px 1px 0 #fff, inset -1px -1px 0 #555;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  color: #000;
+  font-size: 12px;
+  line-height: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: bold;
+}
+
+.retro-ytmp-close {
+  font-size: 14px;
+}
+
+.retro-ytmp-compact:active,
+.retro-ytmp-close:active {
+  box-shadow: inset -1px -1px 0 #fff, inset 1px 1px 0 #555;
+  background: linear-gradient(180deg, #9a9a9a, #d0d0d0);
+}
+
+html.retro-ytmp-compact,
+html.retro-ytmp-compact body {
+  background: #000 !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+html.retro-ytmp-compact body > *:not(#retro-ytmp) {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+html.retro-ytmp-compact #retro-ytmp {
+  top: 2px !important;
+  left: 2px !important;
+  right: auto !important;
+  bottom: auto !important;
+}
+
+html.retro-ytmp-compact .retro-ytmp-titlebar {
+  cursor: default;
+}
+
+html.retro-ytmp-compact .retro-ytmp-track-wrap {
+  overflow: visible;
+  white-space: normal;
+}
+
+html.retro-ytmp-compact .retro-ytmp-track {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  height: auto;
+  line-height: 22px;
+  word-break: break-word;
+}
+
+html.retro-ytmp-compact .retro-ytmp-artist {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  height: auto;
+  line-height: 16px;
+  word-break: break-word;
+}
+
+.retro-ytmp-display {
+  position: relative;
+  background: #0a1a0d;
+  color: #39ff14;
+  padding: 10px 12px 8px;
+  margin: 8px;
+  border: 1px solid #000;
+  box-shadow:
+    inset 1px 1px 0 #000,
+    inset 2px 2px 8px rgba(0, 0, 0, 0.7);
+  overflow: hidden;
+  text-shadow: 0 0 6px rgba(57, 255, 20, 0.55);
+}
+
+.retro-ytmp-scanlines {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 2px,
+    rgba(0, 0, 0, 0.15) 3px,
+    rgba(0, 0, 0, 0.15) 3px
+  );
+  opacity: 0.6;
+}
+
+.retro-ytmp-track-wrap {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.retro-ytmp-track {
+  font-size: 18px;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 22px;
+  line-height: 22px;
+  will-change: transform;
+}
+
+.retro-ytmp-track.retro-ytmp-track-marquee {
+  overflow: visible;
+  text-overflow: clip;
+  animation: retro-ytmp-marquee var(--marquee-duration, 8s) ease-in-out infinite alternate;
+}
+
+@keyframes retro-ytmp-marquee {
+  0%, 12% { transform: translateX(0); }
+  88%, 100% { transform: translateX(var(--marquee-shift, 0)); }
+}
+
+.retro-ytmp-artist {
+  font-size: 13px;
+  color: #2ad82a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  height: 18px;
+  line-height: 18px;
+  margin-top: 3px;
+}
+
+.retro-ytmp-time {
+  display: flex;
+  gap: 4px;
+  font-size: 14px;
+  margin-top: 8px;
+  justify-content: flex-end;
+  color: #7dff7d;
+}
+
+.retro-ytmp-sep {
+  opacity: 0.7;
+}
+
+.retro-ytmp-progress {
+  margin-top: 6px;
+  height: 8px;
+  background: #021a02;
+  border: 1px solid #000;
+  box-shadow: inset 1px 1px 0 #000, inset -1px -1px 0 rgba(255,255,255,0.04);
+  cursor: pointer;
+  position: relative;
+}
+
+.retro-ytmp-progress-fill {
+  height: 100%;
+  background:
+    linear-gradient(180deg, #9bff9b 0%, #39ff14 45%, #1fa808 100%);
+  width: 0%;
+  box-shadow: 0 0 6px rgba(57, 255, 20, 0.5);
+  transition: width 0.25s linear;
+}
+
+.retro-ytmp-controls {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: 2px 8px 10px;
+}
+
+.retro-ytmp-btn {
+  flex: 1;
+  background: linear-gradient(180deg, #909090 0%, #5a5a5a 50%, #3a3a3a 100%);
+  border: 1px solid #0a0a0a;
+  box-shadow:
+    inset 1px 1px 0 #cfcfcf,
+    inset -1px -1px 0 #1a1a1a;
+  color: #f0f0f0;
+  font-size: 18px;
+  padding: 8px 0;
+  cursor: pointer;
+  font-family: inherit;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.5);
+}
+
+.retro-ytmp-btn:active {
+  box-shadow:
+    inset -1px -1px 0 #cfcfcf,
+    inset 1px 1px 0 #1a1a1a;
+  background: linear-gradient(180deg, #3a3a3a 0%, #5a5a5a 50%, #909090 100%);
+}
+
+.retro-ytmp-play {
+  flex: 1.6;
+  color: #9bff9b;
+  text-shadow: 0 0 6px rgba(57, 255, 20, 0.6), 1px 1px 0 rgba(0,0,0,0.5);
+}
+
+.retro-ytmp-aux {
+  flex: 0.8;
+  font-size: 14px;
+  color: #b8b8b8;
+}
+
+.retro-ytmp-btn.retro-ytmp-active {
+  color: #39ff14;
+  text-shadow: 0 0 8px rgba(57, 255, 20, 0.85), 0 0 2px rgba(57, 255, 20, 0.6), 1px 1px 0 rgba(0,0,0,0.5);
+  background: linear-gradient(180deg, #6a6a6a 0%, #3a3a3a 50%, #2a2a2a 100%);
+  box-shadow:
+    inset -1px -1px 0 #b0b0b0,
+    inset 1px 1px 0 #1a1a1a;
+}
+
+.retro-ytmp-volume {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px 10px;
+}
+
+.retro-ytmp-vol-label {
+  font-size: 10px;
+  color: #9a9a9a;
+  letter-spacing: 2px;
+  font-weight: bold;
+  text-shadow: 1px 1px 0 #000;
+}
+
+.retro-ytmp-slider {
+  flex: 1;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  cursor: pointer;
+  padding: 0 8px;
+}
+
+.retro-ytmp-slider-track {
+  position: relative;
+  width: 100%;
+  height: 8px;
+  background: #021a02;
+  border: 1px solid #000;
+  border-radius: 1px;
+  box-shadow:
+    inset 1px 1px 2px rgba(0, 0, 0, 0.95),
+    inset -1px -1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.retro-ytmp-slider-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 0%;
+  background:
+    linear-gradient(180deg, #9bff9b 0%, #39ff14 50%, #1fa808 100%);
+  box-shadow: 0 0 6px rgba(57, 255, 20, 0.55);
+  border-radius: 1px;
+  transition: width 0.06s linear;
+}
+
+.retro-ytmp-slider-ticks {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    repeating-linear-gradient(
+      to right,
+      rgba(0, 0, 0, 0) 0,
+      rgba(0, 0, 0, 0) calc(25% - 1px),
+      rgba(0, 0, 0, 0.55) calc(25% - 1px),
+      rgba(0, 0, 0, 0.55) 25%
+    );
+}
+
+.retro-ytmp-slider-thumb {
+  position: absolute;
+  top: 50%;
+  left: 0%;
+  width: 14px;
+  height: 20px;
+  transform: translate(-50%, -50%);
+  background:
+    linear-gradient(180deg, #e8e8e8 0%, #a8a8a8 45%, #606060 55%, #3a3a3a 100%);
+  border: 1px solid #0a0a0a;
+  box-shadow:
+    inset 1px 1px 0 #ffffff,
+    inset -1px -1px 0 #222,
+    0 2px 3px rgba(0, 0, 0, 0.55);
+  border-radius: 2px;
+  cursor: ew-resize;
+  transition: left 0.06s linear;
+}
+
+.retro-ytmp-slider-thumb::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 3px;
+  right: 3px;
+  height: 1px;
+  background: #1a1a1a;
+  box-shadow: 0 -3px 0 #1a1a1a, 0 3px 0 #1a1a1a;
+  transform: translateY(-50%);
+}
+
+.retro-ytmp-slider.retro-ytmp-slider-dragging .retro-ytmp-slider-thumb {
+  box-shadow:
+    inset 1px 1px 0 #ffffff,
+    inset -1px -1px 0 #222,
+    0 0 6px rgba(57, 255, 20, 0.45),
+    0 2px 3px rgba(0, 0, 0, 0.55);
+}
+
+.retro-ytmp-slider.retro-ytmp-slider-dragging .retro-ytmp-slider-fill,
+.retro-ytmp-slider.retro-ytmp-slider-dragging .retro-ytmp-slider-thumb {
+  transition: none;
+}
+
+.retro-ytmp-vol-value {
+  font-size: 12px;
+  color: #39ff14;
+  text-shadow: 0 0 4px rgba(57, 255, 20, 0.6);
+  min-width: 28px;
+  text-align: right;
+  letter-spacing: 1px;
+}
