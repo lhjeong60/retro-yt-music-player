@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Retro YT Music Player",
   "short_name": "Retro YTM",
-  "version": "0.4.0",
+  "version": "1.0.0",
   "description": "Retro stereo skin for YouTube Music. Green LCD, playback & volume controls, always-on-top mini player via PiP.",
   "homepage_url": "https://github.com/lhjeong60/retro-yt-music-player",
   "permissions": ["scripting", "storage"],
