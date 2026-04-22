@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="bezel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a5a5a"/>
+      <stop offset="100%" stop-color="#2a2a2a"/>
+    </linearGradient>
+    <linearGradient id="lcd" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d2110"/>
+      <stop offset="100%" stop-color="#061208"/>
+    </linearGradient>
+    <linearGradient id="led" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9bff9b"/>
+      <stop offset="100%" stop-color="#1fa808"/>
+    </linearGradient>
+  </defs>
+
+  <!-- outer body -->
+  <rect x="4" y="4" width="120" height="120" rx="14" fill="url(#bezel)" stroke="#0a0a0a" stroke-width="6"/>
+
+  <!-- LCD screen fills most of canvas -->
+  <rect x="18" y="18" width="92" height="92" fill="url(#lcd)" stroke="#000" stroke-width="3"/>
+
+  <!-- big EQ bars — thick and readable at 16px -->
+  <rect x="26" y="72" width="12" height="30" fill="url(#led)"/>
+  <rect x="42" y="54" width="12" height="48" fill="url(#led)"/>
+  <rect x="58" y="36" width="12" height="66" fill="url(#led)"/>
+  <rect x="74" y="50" width="12" height="52" fill="url(#led)"/>
+  <rect x="90" y="64" width="12" height="38" fill="url(#led)"/>
+</svg>

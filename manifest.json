@@ -1,15 +1,27 @@
 {
   "manifest_version": 3,
   "name": "Retro YT Music Player",
+  "short_name": "Retro YTM",
   "version": "0.4.0",
-  "description": "Overlays YouTube Music with a retro stereo-style player skin. Toggle via toolbar icon, compact mode shrinks the window.",
+  "description": "Retro stereo skin for YouTube Music. Green LCD, playback & volume controls, always-on-top mini player via PiP.",
+  "homepage_url": "https://github.com/lhjeong60/retro-yt-music-player",
   "permissions": ["scripting", "storage"],
   "host_permissions": ["https://music.youtube.com/*"],
   "background": {
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Retro YT Music Player"
+    "default_title": "Retro YT Music Player",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
   },
   "content_scripts": [
     {

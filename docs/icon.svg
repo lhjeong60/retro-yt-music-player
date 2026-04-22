@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="bezel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a5a5a"/>
+      <stop offset="50%" stop-color="#3a3a3a"/>
+      <stop offset="100%" stop-color="#2a2a2a"/>
+    </linearGradient>
+    <linearGradient id="lcd" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0d2110"/>
+      <stop offset="100%" stop-color="#061208"/>
+    </linearGradient>
+    <linearGradient id="led" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9bff9b"/>
+      <stop offset="50%" stop-color="#39ff14"/>
+      <stop offset="100%" stop-color="#1fa808"/>
+    </linearGradient>
+    <linearGradient id="btn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#909090"/>
+      <stop offset="50%" stop-color="#5a5a5a"/>
+      <stop offset="100%" stop-color="#3a3a3a"/>
+    </linearGradient>
+  </defs>
+
+  <!-- outer body -->
+  <rect x="2" y="2" width="124" height="124" rx="8" fill="url(#bezel)" stroke="#0a0a0a" stroke-width="3"/>
+
+  <!-- inner highlight -->
+  <rect x="5" y="5" width="118" height="118" rx="6" fill="none" stroke="#8a8a8a" stroke-width="1" opacity="0.7"/>
+
+  <!-- LCD screen area -->
+  <rect x="14" y="18" width="100" height="56" fill="url(#lcd)" stroke="#000" stroke-width="2"/>
+
+  <!-- LCD scanlines -->
+  <g opacity="0.35">
+    <rect x="14" y="22" width="100" height="1" fill="#000"/>
+    <rect x="14" y="30" width="100" height="1" fill="#000"/>
+    <rect x="14" y="38" width="100" height="1" fill="#000"/>
+    <rect x="14" y="46" width="100" height="1" fill="#000"/>
+    <rect x="14" y="54" width="100" height="1" fill="#000"/>
+    <rect x="14" y="62" width="100" height="1" fill="#000"/>
+    <rect x="14" y="70" width="100" height="1" fill="#000"/>
+  </g>
+
+  <!-- EQ level bars (LED meter) -->
+  <g>
+    <rect x="22" y="56" width="7" height="12" fill="url(#led)"/>
+    <rect x="33" y="48" width="7" height="20" fill="url(#led)"/>
+    <rect x="44" y="40" width="7" height="28" fill="url(#led)"/>
+    <rect x="55" y="32" width="7" height="36" fill="url(#led)"/>
+    <rect x="66" y="44" width="7" height="24" fill="url(#led)"/>
+    <rect x="77" y="52" width="7" height="16" fill="url(#led)"/>
+    <rect x="88" y="58" width="7" height="10" fill="url(#led)"/>
+    <rect x="99" y="62" width="7" height="6" fill="url(#led)"/>
+  </g>
+
+  <!-- glow overlay on bars -->
+  <g opacity="0.5" filter="url(#glow)">
+    <rect x="22" y="56" width="7" height="12" fill="#9bff9b"/>
+    <rect x="33" y="48" width="7" height="20" fill="#9bff9b"/>
+    <rect x="44" y="40" width="7" height="28" fill="#9bff9b"/>
+    <rect x="55" y="32" width="7" height="36" fill="#9bff9b"/>
+  </g>
+
+  <!-- buttons row -->
+  <g>
+    <!-- prev -->
+    <rect x="14" y="86" width="22" height="28" fill="url(#btn)" stroke="#0a0a0a" stroke-width="1.5"/>
+    <polygon points="22,100 30,94 30,106" fill="#e0e0e0"/>
+    <rect x="20" y="94" width="2" height="12" fill="#e0e0e0"/>
+
+    <!-- play (wider, glowing green) -->
+    <rect x="40" y="86" width="48" height="28" fill="url(#btn)" stroke="#0a0a0a" stroke-width="1.5"/>
+    <polygon points="58,96 58,104 58,104" fill="none"/>
+    <polygon points="56,94 72,100 56,106" fill="#39ff14" stroke="#9bff9b" stroke-width="0.5"/>
+
+    <!-- next -->
+    <rect x="92" y="86" width="22" height="28" fill="url(#btn)" stroke="#0a0a0a" stroke-width="1.5"/>
+    <polygon points="106,100 98,94 98,106" fill="#e0e0e0"/>
+    <rect x="106" y="94" width="2" height="12" fill="#e0e0e0"/>
+  </g>
+</svg>
