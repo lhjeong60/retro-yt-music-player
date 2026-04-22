@@ -21,7 +21,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["main-world.js"],
+      "resources": ["main-world.js", "overlay.css"],
       "matches": ["https://music.youtube.com/*"]
     }
   ]

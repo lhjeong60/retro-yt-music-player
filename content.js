@@ -6,7 +6,7 @@
   }
   const stale = document.getElementById('retro-ytmp');
   if (stale) stale.remove();
-  document.documentElement.classList.remove('retro-ytmp-compact');
+  document.documentElement.classList.remove('retro-ytmp-compact', 'retro-ytmp-pip');
 
   const cleanups = [];
   window.__retroYtmpTeardown = () => {
@@ -38,7 +38,9 @@
       <div class="retro-ytmp-track-wrap">
         <div class="retro-ytmp-track">—</div>
       </div>
-      <div class="retro-ytmp-artist">—</div>
+      <div class="retro-ytmp-artist-wrap">
+        <div class="retro-ytmp-artist">—</div>
+      </div>
       <div class="retro-ytmp-time">
         <span class="retro-ytmp-current">0:00</span>
         <span class="retro-ytmp-sep">/</span>
@@ -89,7 +91,13 @@
     return null;
   };
 
-  const getVideo = () => document.querySelector('video');
+  const getVideo = () => {
+    const videos = Array.from(document.querySelectorAll('video'));
+    if (!videos.length) return null;
+    const playing = videos.find((v) => !v.paused && !v.ended && v.readyState > 2);
+    if (playing) return playing;
+    return document.querySelector('video.html5-main-video') || videos[0];
+  };
 
   const getTitleText = () => {
     const el = q([
@@ -164,12 +172,17 @@
         'ytmusic-player-bar .shuffle',
         'tp-yt-paper-icon-button.shuffle',
         '.shuffle.ytmusic-player-bar',
+        'ytmusic-player-bar [aria-label*="shuffle" i]',
+        'ytmusic-player-bar [aria-label*="셔플" i]',
+        'ytmusic-player-bar [aria-label*="임의" i]',
         '.shuffle',
       ],
       repeat: [
         'ytmusic-player-bar .repeat',
         'tp-yt-paper-icon-button.repeat',
         '.repeat.ytmusic-player-bar',
+        'ytmusic-player-bar [aria-label*="repeat" i]',
+        'ytmusic-player-bar [aria-label*="반복" i]',
         '.repeat',
       ],
     };
@@ -177,33 +190,18 @@
   };
 
   const readShuffleState = () => {
-    const b = getBtn('shuffle');
-    if (!b) return null;
-    const pressed = b.getAttribute('aria-pressed');
-    if (pressed === 'true') return true;
-    if (pressed === 'false') return false;
-    if (b.hasAttribute('active') || b.classList.contains('active')) return true;
-    const lbl = (b.getAttribute('aria-label') || b.title || '').toLowerCase();
-    if (lbl.includes('shuffle on') || lbl.includes('셔플 사용') || lbl.includes('임의 재생 사용 중')) return true;
-    if (lbl.includes('shuffle off') || lbl.includes('임의 재생 사용 안')) return false;
+    const bar = document.querySelector('ytmusic-player-bar');
+    if (bar) return bar.hasAttribute('shuffle-on');
     return null;
   };
 
   const readRepeatState = () => {
-    const b = getBtn('repeat');
-    if (!b) return null;
-    const lbl = (b.getAttribute('aria-label') || b.title || '').toLowerCase();
-    if (/\bone\b|1곡|한곡|한 곡|현재 노래/.test(lbl)) return 2;
-    if (/\ball\b|전체|목록/.test(lbl)) return 1;
-    if (/\boff\b|해제|사용 안|안 함/.test(lbl)) return 0;
-    const iconHost = b.querySelector('[icon]');
-    if (iconHost) {
-      const icon = (iconHost.getAttribute('icon') || '').toLowerCase();
-      if (icon.includes('repeat-one') || icon.includes('one')) return 2;
-      if (icon.includes('repeat')) {
-        return (b.hasAttribute('active') || b.classList.contains('active')) ? 1 : 0;
-      }
-    }
+    const bar = document.querySelector('ytmusic-player-bar');
+    if (!bar) return null;
+    const mode = (bar.getAttribute('repeat-mode') || '').toUpperCase();
+    if (mode === 'ONE') return 2;
+    if (mode === 'ALL') return 1;
+    if (mode === 'NONE') return 0;
     return null;
   };
 
@@ -235,35 +233,37 @@
   };
 
   let volDrag = null;
+  let pipWindow = null;
+  let pipOriginalParent = null;
+  let pipOriginalNext = null;
+  let pipStyles = null;
 
-  const updateMarquee = () => {
-    const track = els.track;
-    const wrap = track.parentElement;
+  const applyMarquee = (el) => {
+    const wrap = el?.parentElement;
     if (!wrap) return;
-    const isCompact = document.documentElement.classList.contains('retro-ytmp-compact');
-    if (isCompact) {
-      track.classList.remove('retro-ytmp-track-marquee');
-      track.style.removeProperty('--marquee-shift');
-      track.style.removeProperty('--marquee-duration');
-      return;
-    }
-    const overflowPx = track.scrollWidth - wrap.clientWidth;
+    const overflowPx = el.scrollWidth - wrap.clientWidth;
     if (overflowPx > 2) {
       const duration = Math.min(14, Math.max(5, overflowPx / 30));
-      track.style.setProperty('--marquee-shift', `-${overflowPx}px`);
-      track.style.setProperty('--marquee-duration', `${duration.toFixed(1)}s`);
-      track.classList.add('retro-ytmp-track-marquee');
+      el.style.setProperty('--marquee-shift', `-${overflowPx}px`);
+      el.style.setProperty('--marquee-duration', `${duration.toFixed(1)}s`);
+      el.classList.add('retro-ytmp-marquee');
     } else {
-      track.classList.remove('retro-ytmp-track-marquee');
-      track.style.removeProperty('--marquee-shift');
-      track.style.removeProperty('--marquee-duration');
+      el.classList.remove('retro-ytmp-marquee');
+      el.style.removeProperty('--marquee-shift');
+      el.style.removeProperty('--marquee-duration');
     }
+  };
+
+  const updateMarquee = () => {
+    applyMarquee(els.track);
+    applyMarquee(els.artist);
   };
 
   const update = () => {
     const video = getVideo();
-    const current = video ? video.currentTime : 0;
-    const duration = video ? video.duration : 0;
+    const meta = getBridgeMeta();
+    const current = (meta && typeof meta.currentTime === 'number') ? meta.currentTime : (video ? video.currentTime : 0);
+    const duration = (meta && typeof meta.duration === 'number' && meta.duration > 0) ? meta.duration : (video ? video.duration : 0);
     const playing = !!(video && !video.paused && !video.ended && video.readyState > 2);
 
     setText(els.track, getTitleText() || '—');
@@ -287,7 +287,13 @@
     if (els.repeat.textContent !== nextRepeatSym) els.repeat.textContent = nextRepeatSym;
 
     if (!volDrag) {
-      const vol = video ? (video.muted ? 0 : video.volume) : 0;
+      const meta = getBridgeMeta();
+      let vol;
+      if (meta && typeof meta.volume === 'number') {
+        vol = meta.muted ? 0 : meta.volume;
+      } else {
+        vol = video ? (video.muted ? 0 : video.volume) : 0;
+      }
       const pct = (vol * 100).toFixed(2);
       els.sliderFill.style.width = pct + '%';
       els.sliderThumb.style.left = pct + '%';
@@ -305,15 +311,7 @@
     const target = getBtn(action);
     if (!target) return;
     target.click();
-
-    if (action === 'shuffle') {
-      uiShuffleOn = !uiShuffleOn;
-      els.shuffle.classList.toggle('retro-ytmp-active', uiShuffleOn);
-    } else if (action === 'repeat') {
-      uiRepeatMode = (uiRepeatMode + 1) % 3;
-      els.repeat.classList.toggle('retro-ytmp-active', uiRepeatMode > 0);
-      els.repeat.textContent = uiRepeatMode === 2 ? '↻1' : '↻';
-    }
+    update();
   });
 
   els.progress.addEventListener('click', (e) => {
@@ -328,92 +326,169 @@
     setEnabled(false);
   });
 
-  let compactState = null;
-
-  const requestResize = (payload) => {
-    try {
-      chrome.runtime.sendMessage({ type: 'retro-ytmp-resize', ...payload });
-    } catch (e) {
-      console.warn('[retro-ytmp] resize request failed', e);
+  const onPipClose = () => {
+    if (pipStyles) {
+      overlay.style.position = pipStyles.position;
+      overlay.style.left = pipStyles.left;
+      overlay.style.top = pipStyles.top;
+      overlay.style.right = pipStyles.right;
+      overlay.style.bottom = pipStyles.bottom;
+      pipStyles = null;
     }
+    if (pipOriginalParent) {
+      if (pipOriginalNext && pipOriginalNext.parentNode === pipOriginalParent) {
+        pipOriginalParent.insertBefore(overlay, pipOriginalNext);
+      } else {
+        pipOriginalParent.appendChild(overlay);
+      }
+    }
+    pipOriginalParent = null;
+    pipOriginalNext = null;
+    pipWindow = null;
+    els.compact.textContent = '▭';
+    els.compact.title = 'Open Picture-in-Picture (always on top)';
   };
 
-  const enterCompact = () => {
-    compactState = {
-      outerWidth: window.outerWidth,
-      outerHeight: window.outerHeight,
-      screenX: window.screenX,
-      screenY: window.screenY,
-      overlayLeft: overlay.style.left,
-      overlayTop: overlay.style.top,
-      overlayRight: overlay.style.right,
-      overlayBottom: overlay.style.bottom,
-    };
+  const PIP_OVERRIDE_CSS = `
+    html, body { margin: 0; padding: 0; background: #000; overflow: hidden; width: 100%; height: 100%; }
+    #retro-ytmp {
+      position: static !important;
+      top: auto !important;
+      right: auto !important;
+      left: auto !important;
+      bottom: auto !important;
+      width: 100% !important;
+      border: 0 !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+  `;
 
-    document.documentElement.classList.add('retro-ytmp-compact');
-    overlay.style.left = '';
-    overlay.style.top = '';
-    overlay.style.right = '';
-    overlay.style.bottom = '';
+  const enterCompact = async () => {
+    if (pipWindow) return;
+    if (!window.documentPictureInPicture) {
+      console.warn('[retro-ytmp] Document Picture-in-Picture not supported in this browser');
+      return;
+    }
+    try {
+      const rect = overlay.getBoundingClientRect();
+      const initW = Math.max(280, Math.ceil(rect.width) || 320);
+      const initH = Math.max(220, Math.ceil(rect.height) || 280);
 
-    const rect = overlay.getBoundingClientRect();
-    const chromeW = Math.max(0, window.outerWidth - window.innerWidth);
-    const chromeH = Math.max(0, window.outerHeight - window.innerHeight);
-    const width = Math.ceil(rect.width) + chromeW + 4;
-    const height = Math.ceil(rect.height) + chromeH + 4;
+      const win = await window.documentPictureInPicture.requestWindow({ width: initW, height: initH });
+      pipWindow = win;
 
-    requestResize({ width, height });
-    els.compact.textContent = '◱';
-    els.compact.title = 'Restore window size';
+      let cssText = '';
+      try {
+        const res = await fetch(chrome.runtime.getURL('overlay.css'));
+        cssText = await res.text();
+      } catch (e) {
+        console.warn('[retro-ytmp] overlay.css fetch failed', e);
+      }
+      const baseStyle = win.document.createElement('style');
+      baseStyle.textContent = cssText;
+      win.document.head.appendChild(baseStyle);
+
+      const overrideStyle = win.document.createElement('style');
+      overrideStyle.textContent = PIP_OVERRIDE_CSS;
+      win.document.head.appendChild(overrideStyle);
+
+      win.document.title = 'Retro Player';
+      win.document.documentElement.classList.add('retro-ytmp-pip');
+
+      pipOriginalParent = overlay.parentNode;
+      pipOriginalNext = overlay.nextSibling;
+      pipStyles = {
+        position: overlay.style.position,
+        left: overlay.style.left,
+        top: overlay.style.top,
+        right: overlay.style.right,
+        bottom: overlay.style.bottom,
+      };
+      overlay.style.position = '';
+      overlay.style.left = '';
+      overlay.style.top = '';
+      overlay.style.right = '';
+      overlay.style.bottom = '';
+      win.document.body.appendChild(overlay);
+
+      win.addEventListener('mousemove', onDocMouseMove);
+      win.addEventListener('mouseup', onDocMouseUp);
+      win.addEventListener('pagehide', onPipClose, { once: true });
+
+      requestAnimationFrame(() => {
+        try {
+          const h = overlay.offsetHeight;
+          const w = overlay.offsetWidth;
+          if (h > 0 && w > 0 && win.resizeTo) {
+            const chromeH = Math.max(0, win.outerHeight - win.innerHeight);
+            const chromeW = Math.max(0, win.outerWidth - win.innerWidth);
+            win.resizeTo(w + chromeW, h + chromeH);
+          }
+        } catch (_) {}
+      });
+
+      els.compact.textContent = '◱';
+      els.compact.title = 'Close Picture-in-Picture';
+    } catch (e) {
+      console.warn('[retro-ytmp] PiP request failed', e);
+      pipWindow = null;
+    }
   };
 
   const exitCompact = () => {
-    document.documentElement.classList.remove('retro-ytmp-compact');
-    if (compactState) {
-      overlay.style.left = compactState.overlayLeft;
-      overlay.style.top = compactState.overlayTop;
-      overlay.style.right = compactState.overlayRight;
-      overlay.style.bottom = compactState.overlayBottom;
-      requestResize({ width: compactState.outerWidth, height: compactState.outerHeight });
-    }
-    compactState = null;
-    els.compact.textContent = '▭';
-    els.compact.title = 'Shrink window to player size';
+    if (!pipWindow) return;
+    try { pipWindow.close(); } catch (_) {}
   };
 
   els.compact.addEventListener('click', () => {
-    if (compactState) exitCompact();
+    if (pipWindow) exitCompact();
     else enterCompact();
   });
+  cleanups.push(() => { if (pipWindow) { try { pipWindow.close(); } catch (_) {} } });
 
   let drag = null;
   els.titlebar.addEventListener('mousedown', (e) => {
     if (e.target.closest('button')) return;
+    if (pipWindow) return;
     const rect = overlay.getBoundingClientRect();
     drag = { dx: e.clientX - rect.left, dy: e.clientY - rect.top };
     overlay.classList.add('retro-ytmp-dragging');
     e.preventDefault();
   });
-  addListener(window, 'mousemove', (e) => {
-    if (!drag) return;
-    const x = Math.max(0, Math.min(window.innerWidth - overlay.offsetWidth, e.clientX - drag.dx));
-    const y = Math.max(0, Math.min(window.innerHeight - overlay.offsetHeight, e.clientY - drag.dy));
-    overlay.style.left = x + 'px';
-    overlay.style.top = y + 'px';
-    overlay.style.right = 'auto';
-    overlay.style.bottom = 'auto';
-  });
-  addListener(window, 'mouseup', () => {
+
+  const onDocMouseMove = (e) => {
+    if (drag) {
+      const x = Math.max(0, Math.min(window.innerWidth - overlay.offsetWidth, e.clientX - drag.dx));
+      const y = Math.max(0, Math.min(window.innerHeight - overlay.offsetHeight, e.clientY - drag.dy));
+      overlay.style.left = x + 'px';
+      overlay.style.top = y + 'px';
+      overlay.style.right = 'auto';
+      overlay.style.bottom = 'auto';
+    }
+    if (volDrag) setVolumeFromClientX(e.clientX);
+  };
+
+  const onDocMouseUp = () => {
     if (drag) overlay.classList.remove('retro-ytmp-dragging');
     drag = null;
-  });
+    if (volDrag) els.slider.classList.remove('retro-ytmp-slider-dragging');
+    volDrag = null;
+  };
+
+  addListener(window, 'mousemove', onDocMouseMove);
+  addListener(window, 'mouseup', onDocMouseUp);
 
   const applyVolume = (vol) => {
-    const video = getVideo();
-    if (!video) return;
     const clamped = Math.max(0, Math.min(1, vol));
-    video.volume = clamped;
-    video.muted = clamped === 0;
+    try {
+      window.postMessage({ source: 'retro-ytmp', type: 'setVolume', value: clamped }, '*');
+    } catch (_) {}
+    const video = getVideo();
+    if (video) {
+      video.volume = clamped;
+      video.muted = clamped === 0;
+    }
     const pct = (clamped * 100).toFixed(2);
     els.sliderFill.style.width = pct + '%';
     els.sliderThumb.style.left = pct + '%';
@@ -433,16 +508,6 @@
     e.preventDefault();
   });
 
-  addListener(window, 'mousemove', (e) => {
-    if (!volDrag) return;
-    setVolumeFromClientX(e.clientX);
-  });
-
-  addListener(window, 'mouseup', () => {
-    if (volDrag) els.slider.classList.remove('retro-ytmp-slider-dragging');
-    volDrag = null;
-  });
-
   els.slider.addEventListener('wheel', (e) => {
     const video = getVideo();
     if (!video) return;
@@ -458,7 +523,7 @@
     if (enabled) {
       overlay.style.display = '';
     } else {
-      if (compactState) exitCompact();
+      if (pipWindow) exitCompact();
       overlay.style.display = 'none';
     }
     if (persist) {

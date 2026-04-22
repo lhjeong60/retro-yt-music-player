@@ -77,52 +77,18 @@
   background: linear-gradient(180deg, #9a9a9a, #d0d0d0);
 }
 
-html.retro-ytmp-compact,
-html.retro-ytmp-compact body {
+html.retro-ytmp-pip,
+html.retro-ytmp-pip body {
   background: #000 !important;
   overflow: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
 }
 
-html.retro-ytmp-compact body > *:not(#retro-ytmp) {
-  opacity: 0 !important;
-  pointer-events: none !important;
-}
-
-html.retro-ytmp-compact #retro-ytmp {
-  top: 2px !important;
-  left: 2px !important;
-  right: auto !important;
-  bottom: auto !important;
-}
-
-html.retro-ytmp-compact .retro-ytmp-titlebar {
+html.retro-ytmp-pip .retro-ytmp-titlebar {
   cursor: default;
 }
 
-html.retro-ytmp-compact .retro-ytmp-track-wrap {
-  overflow: visible;
-  white-space: normal;
-}
-
-html.retro-ytmp-compact .retro-ytmp-track {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
-  height: auto;
-  line-height: 22px;
-  word-break: break-word;
-}
-
-html.retro-ytmp-compact .retro-ytmp-artist {
-  white-space: normal;
-  overflow: visible;
-  text-overflow: clip;
-  height: auto;
-  line-height: 16px;
-  word-break: break-word;
-}
 
 .retro-ytmp-display {
   position: relative;
@@ -152,9 +118,14 @@ html.retro-ytmp-compact .retro-ytmp-artist {
   opacity: 0.6;
 }
 
-.retro-ytmp-track-wrap {
+.retro-ytmp-track-wrap,
+.retro-ytmp-artist-wrap {
   overflow: hidden;
   white-space: nowrap;
+}
+
+.retro-ytmp-artist-wrap {
+  margin-top: 3px;
 }
 
 .retro-ytmp-track {
@@ -168,7 +139,8 @@ html.retro-ytmp-compact .retro-ytmp-artist {
   will-change: transform;
 }
 
-.retro-ytmp-track.retro-ytmp-track-marquee {
+.retro-ytmp-track.retro-ytmp-marquee,
+.retro-ytmp-artist.retro-ytmp-marquee {
   overflow: visible;
   text-overflow: clip;
   animation: retro-ytmp-marquee var(--marquee-duration, 8s) ease-in-out infinite alternate;
@@ -187,7 +159,7 @@ html.retro-ytmp-compact .retro-ytmp-artist {
   text-overflow: ellipsis;
   height: 18px;
   line-height: 18px;
-  margin-top: 3px;
+  will-change: transform;
 }
 
 .retro-ytmp-time {

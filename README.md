@@ -43,7 +43,7 @@ Chrome 127+ 의 확장 보안 정책상, 확장 아이콘을 처음 클릭하면
 - **⇄ (셔플)** — 활성 시 녹색 점등
 - **↻ (반복)** — 3단계 토글: off → 전체(↻ 녹색) → 한 곡(↻1 녹색) → off
 - **VOL 슬라이더** — 믹서 페이더 스타일. 크롬 그립 핸들을 **좌우 드래그** 또는 트랙 임의 지점 클릭으로 볼륨 조절. 마우스 휠도 지원. 녹색 LED 레벨 바로 현재 볼륨 시각화, 오른쪽에 숫자 %. 0까지 내리면 자동 뮤트
-- **▭ (컴팩트)** — YTM UI 숨기고 Chrome 창 크기를 플레이어 크기에 맞게 축소. 한 번 더 누르면 이전 크기로 복원
+- **▭ (컴팩트 / PiP)** — Document Picture-in-Picture 창으로 분리. OS 레벨 **항상 최상단** 미니 창으로 떠서 다른 앱 위에서도 계속 보임. 원본 YTM 창은 그대로 유지. 한 번 더 누르거나 PiP 창을 닫으면 원위치 복귀. Chrome 116+ 필요
 - **×** — Off와 동일 (아이콘 다시 클릭하면 복귀)
 
 ## 개발 팁
@@ -54,8 +54,8 @@ Chrome 127+ 의 확장 보안 정책상, 확장 아이콘을 처음 클릭하면
 
 ```
 manifest.json   # MV3, music.youtube.com 에만 주입, scripting 권한
-background.js   # chrome.windows.update 로 창 리사이즈 + 확장 리로드/설치 시 열린 탭 자동 주입
-content.js      # 오버레이 생성 + YTM DOM/비디오 브리지 + 컴팩트 토글 + 이전 인스턴스 teardown
+background.js   # 확장 리로드/설치 시 열린 YTM 탭에 자동 주입 + 아이콘 클릭 시 on/off 토글 메시지 전송
+content.js      # 오버레이 생성 + YTM DOM/비디오 브리지 + Document PiP 토글 + 이전 인스턴스 teardown
 main-world.js   # 페이지 main world 에서 navigator.mediaSession 과 ytmusic-player-bar.playerApi_ 읽어 <html> data 속성에 export
 overlay.css     # 레트로 스테레오 스킨 + 컴팩트 모드 스타일
 ```

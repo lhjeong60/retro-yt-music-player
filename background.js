@@ -39,17 +39,3 @@ chrome.action.onClicked.addListener(async (tab) => {
   }
 });
 
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  if (msg && msg.type === 'retro-ytmp-resize' && sender.tab && sender.tab.windowId != null) {
-    const updateInfo = { state: 'normal' };
-    if (typeof msg.width === 'number') updateInfo.width = Math.max(120, Math.round(msg.width));
-    if (typeof msg.height === 'number') updateInfo.height = Math.max(80, Math.round(msg.height));
-    if (typeof msg.left === 'number') updateInfo.left = Math.round(msg.left);
-    if (typeof msg.top === 'number') updateInfo.top = Math.round(msg.top);
-
-    chrome.windows.update(sender.tab.windowId, updateInfo)
-      .then((win) => sendResponse({ ok: true, win }))
-      .catch((err) => sendResponse({ ok: false, error: String(err) }));
-    return true;
-  }
-});
