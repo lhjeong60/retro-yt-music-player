@@ -416,18 +416,6 @@
       win.addEventListener('mouseup', onDocMouseUp);
       win.addEventListener('pagehide', onPipClose, { once: true });
 
-      requestAnimationFrame(() => {
-        try {
-          const h = overlay.offsetHeight;
-          const w = overlay.offsetWidth;
-          if (h > 0 && w > 0 && win.resizeTo) {
-            const chromeH = Math.max(0, win.outerHeight - win.innerHeight);
-            const chromeW = Math.max(0, win.outerWidth - win.innerWidth);
-            win.resizeTo(w + chromeW, h + chromeH);
-          }
-        } catch (_) {}
-      });
-
       els.compact.textContent = '◱';
       els.compact.title = 'Close Picture-in-Picture';
     } catch (e) {
