@@ -68,6 +68,14 @@
       </div>
       <span class="retro-ytmp-vol-value">100</span>
     </div>
+    <div class="retro-ytmp-queue retro-ytmp-queue-collapsed">
+      <button class="retro-ytmp-queue-toggle" type="button" title="Toggle queue list">
+        <span class="retro-ytmp-queue-caret">▶</span>
+        <span class="retro-ytmp-queue-label">QUEUE</span>
+        <span class="retro-ytmp-queue-count">0</span>
+      </button>
+      <div class="retro-ytmp-queue-list"></div>
+    </div>
   `;
 
   const attach = () => {
@@ -226,6 +234,11 @@
     sliderFill: overlay.querySelector('.retro-ytmp-slider-fill'),
     sliderThumb: overlay.querySelector('.retro-ytmp-slider-thumb'),
     volValue: overlay.querySelector('.retro-ytmp-vol-value'),
+    queue: overlay.querySelector('.retro-ytmp-queue'),
+    queueToggle: overlay.querySelector('.retro-ytmp-queue-toggle'),
+    queueCaret: overlay.querySelector('.retro-ytmp-queue-caret'),
+    queueCount: overlay.querySelector('.retro-ytmp-queue-count'),
+    queueList: overlay.querySelector('.retro-ytmp-queue-list'),
   };
 
   const setText = (node, text) => {
@@ -304,6 +317,181 @@
   cleanups.push(() => clearInterval(intervalId));
   update();
 
+  let queueExpanded = false;
+  let queueSignature = '';
+
+  const ROW_TAGS_ANY = 'ytmusic-playlist-panel-video-wrapper-renderer, ytmusic-player-queue-item';
+  const ROW_TAGS_DIRECT = ':scope > ytmusic-playlist-panel-video-wrapper-renderer, :scope > ytmusic-player-queue-item';
+  const ROW_TAG_NAMES = new Set(['YTMUSIC-PLAYLIST-PANEL-VIDEO-WRAPPER-RENDERER', 'YTMUSIC-PLAYER-QUEUE-ITEM']);
+
+  const readQueueItems = () => {
+    const contents = document.querySelector('ytmusic-player-queue #contents');
+    let outers = [];
+    if (contents) {
+      outers = Array.from(contents.querySelectorAll(ROW_TAGS_DIRECT));
+    }
+    if (!outers.length) {
+      const root = document.querySelector('ytmusic-player-queue');
+      if (!root) return [];
+      outers = Array.from(root.querySelectorAll(ROW_TAGS_ANY)).filter((node) => {
+        let p = node.parentElement;
+        while (p && p !== root) {
+          if (ROW_TAG_NAMES.has(p.tagName)) return false;
+          p = p.parentElement;
+        }
+        return true;
+      });
+    }
+    const seen = new Set();
+    const items = [];
+    outers.forEach((outer, i) => {
+      if (seen.has(outer)) return;
+      seen.add(outer);
+      const inner = outer.tagName === 'YTMUSIC-PLAYER-QUEUE-ITEM'
+        ? outer
+        : outer.querySelector('ytmusic-player-queue-item');
+      if (!inner) return;
+      const titleEl = inner.querySelector('.song-title, yt-formatted-string.song-title');
+      const bylineEl = inner.querySelector('.byline, yt-formatted-string.byline');
+      const title = (titleEl?.textContent || '').replace(/\s+/g, ' ').trim();
+      const artist = (bylineEl?.textContent || '').replace(/\s+/g, ' ').trim();
+      const selected = inner.hasAttribute('selected')
+        || inner.getAttribute('aria-selected') === 'true'
+        || outer.hasAttribute('selected');
+      if (!title) return;
+      items.push({ index: i, title, artist, selected, node: outer, inner });
+    });
+    return items;
+  };
+
+  const renderQueue = () => {
+    const items = readQueueItems();
+    setText(els.queueCount, String(items.length));
+    const sig = items.map((it) => `${it.selected ? '*' : ''}${it.title}${it.artist}`).join('\n');
+    if (sig === queueSignature) return;
+    queueSignature = sig;
+
+    const frag = document.createDocumentFragment();
+    items.forEach((it) => {
+      const row = document.createElement('div');
+      row.className = 'retro-ytmp-queue-item' + (it.selected ? ' retro-ytmp-queue-current' : '');
+      row.dataset.queueIndex = String(it.index);
+      const marker = document.createElement('span');
+      marker.className = 'retro-ytmp-queue-marker';
+      marker.textContent = it.selected ? '▶' : '·';
+      const body = document.createElement('div');
+      body.className = 'retro-ytmp-queue-body';
+      const t = document.createElement('div');
+      t.className = 'retro-ytmp-queue-title';
+      t.textContent = it.title;
+      const a = document.createElement('div');
+      a.className = 'retro-ytmp-queue-artist';
+      a.textContent = it.artist || '—';
+      body.appendChild(t);
+      body.appendChild(a);
+      row.appendChild(marker);
+      row.appendChild(body);
+      frag.appendChild(row);
+    });
+    els.queueList.replaceChildren(frag);
+
+    const current = els.queueList.querySelector('.retro-ytmp-queue-current');
+    if (current && queueExpanded) {
+      try {
+        current.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+      } catch (_) {
+        els.queueList.scrollTop = current.offsetTop - els.queueList.clientHeight / 2;
+      }
+    }
+  };
+
+  const setQueueExpanded = (next, persist = true) => {
+    queueExpanded = !!next;
+    els.queue.classList.toggle('retro-ytmp-queue-collapsed', !queueExpanded);
+    els.queueCaret.textContent = queueExpanded ? '▼' : '▶';
+    if (queueExpanded) {
+      renderQueue();
+      const current = els.queueList.querySelector('.retro-ytmp-queue-current');
+      if (current) {
+        try {
+          current.scrollIntoView({ block: 'start', behavior: 'auto' });
+        } catch (_) {
+          els.queueList.scrollTop = current.offsetTop;
+        }
+      }
+    }
+    if (persist) {
+      try { chrome.storage.local.set({ queueExpanded }); } catch (_) {}
+    }
+  };
+
+  const measureOverlayContentHeight = () => {
+    const overlayTop = overlay.getBoundingClientRect().top;
+    const last = overlay.lastElementChild;
+    if (!last) return 0;
+    const lastBottom = last.getBoundingClientRect().bottom;
+    return Math.max(0, Math.ceil(lastBottom - overlayTop));
+  };
+
+  const PIP_CONTENT_PAD = 8;
+
+  const resizePipToFitContent = () => {
+    if (!pipWindow) return;
+    const contentH = Math.max(160, measureOverlayContentHeight());
+    const chromeH = Math.max(0, (pipWindow.outerHeight || 0) - (pipWindow.innerHeight || 0));
+    const w = pipWindow.innerWidth || 320;
+    const h = contentH + chromeH + PIP_CONTENT_PAD;
+    try { pipWindow.resizeTo(w, h); } catch (_) {}
+  };
+
+  els.queueToggle.addEventListener('click', () => {
+    setQueueExpanded(!queueExpanded);
+    resizePipToFitContent();
+  });
+
+  els.queueList.addEventListener('click', (e) => {
+    const row = e.target.closest('.retro-ytmp-queue-item');
+    if (!row) return;
+    const idx = parseInt(row.dataset.queueIndex, 10);
+    const items = readQueueItems();
+    const item = items[idx];
+    if (!item) return;
+    const playBtn = (item.inner || item.node).querySelector('#play-button');
+    if (playBtn) {
+      try { playBtn.click(); } catch (_) {}
+    }
+    setTimeout(renderQueue, 250);
+  });
+
+  try {
+    chrome.storage.local.get({ queueExpanded: false }, (res) => {
+      setQueueExpanded(!!(res && res.queueExpanded), false);
+    });
+  } catch (_) {
+    setQueueExpanded(false, false);
+  }
+
+  let queueObserver = null;
+  const ensureQueueObserver = () => {
+    const root = document.querySelector('ytmusic-player-queue');
+    if (!root || queueObserver) return;
+    queueObserver = new MutationObserver(() => {
+      if (queueExpanded) renderQueue();
+      else {
+        const items = readQueueItems();
+        setText(els.queueCount, String(items.length));
+      }
+    });
+    queueObserver.observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['selected', 'aria-selected'] });
+    cleanups.push(() => { try { queueObserver.disconnect(); } catch (_) {} });
+  };
+  ensureQueueObserver();
+  const queueRetryId = setInterval(() => {
+    if (queueObserver) { clearInterval(queueRetryId); return; }
+    ensureQueueObserver();
+  }, 1500);
+  cleanups.push(() => clearInterval(queueRetryId));
+
   overlay.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-action]');
     if (!btn) return;
@@ -358,6 +546,7 @@
       left: auto !important;
       bottom: auto !important;
       width: 100% !important;
+      height: 100% !important;
       border: 0 !important;
       border-radius: 0 !important;
       box-shadow: none !important;
@@ -418,6 +607,17 @@
 
       els.compact.textContent = '◱';
       els.compact.title = 'Close Picture-in-Picture';
+
+      try {
+        if (queueExpanded) renderQueue();
+        const contentH = Math.max(160, measureOverlayContentHeight());
+        const chromeH = Math.max(0, (win.outerHeight || 0) - (win.innerHeight || 0));
+        const targetW = initW;
+        const targetH = contentH + chromeH + PIP_CONTENT_PAD;
+        if (Math.abs(targetH - initH) > 8) {
+          win.resizeTo(targetW, targetH);
+        }
+      } catch (_) {}
     } catch (e) {
       console.warn('[retro-ytmp] PiP request failed', e);
       pipWindow = null;
