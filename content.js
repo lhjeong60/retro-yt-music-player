@@ -677,16 +677,6 @@
         }
         const { w, h } = computeTargetSize();
         try { win.resizeTo(w, h); } catch (_) {}
-        const initScript = win.document.createElement('script');
-        initScript.textContent = `(function(){
-          var w=${w},h=${h};
-          function r(){try{window.resizeTo(w,h);}catch(e){}}
-          r();
-          try{requestAnimationFrame(r);}catch(e){}
-          try{setTimeout(r,0);}catch(e){}
-          window.addEventListener('load',r,{once:true});
-        })();`;
-        win.document.head.appendChild(initScript);
       } catch (_) {}
 
       const onPipFirstInput = () => {
