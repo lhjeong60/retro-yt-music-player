@@ -27,6 +27,7 @@
   overlay.style.display = 'none';
   overlay.innerHTML = `
     <div class="retro-ytmp-titlebar">
+      <button class="retro-ytmp-fit" type="button" title="Fit window to player">⊡</button>
       <span class="retro-ytmp-title">◼ RETRO PLAYER</span>
       <div class="retro-ytmp-winbtns">
         <button class="retro-ytmp-compact" type="button" title="Shrink window to player size">▭</button>
@@ -239,6 +240,7 @@
     queueCaret: overlay.querySelector('.retro-ytmp-queue-caret'),
     queueCount: overlay.querySelector('.retro-ytmp-queue-count'),
     queueList: overlay.querySelector('.retro-ytmp-queue-list'),
+    fit: overlay.querySelector('.retro-ytmp-fit'),
   };
 
   const setText = (node, text) => {
@@ -405,20 +407,23 @@
     }
   };
 
+  const scrollQueueCurrentToTop = () => {
+    const current = els.queueList.querySelector('.retro-ytmp-queue-current');
+    if (!current) return;
+    try {
+      current.scrollIntoView({ block: 'start', behavior: 'auto' });
+    } catch (_) {
+      els.queueList.scrollTop = current.offsetTop;
+    }
+  };
+
   const setQueueExpanded = (next, persist = true) => {
     queueExpanded = !!next;
     els.queue.classList.toggle('retro-ytmp-queue-collapsed', !queueExpanded);
     els.queueCaret.textContent = queueExpanded ? '▼' : '▶';
     if (queueExpanded) {
       renderQueue();
-      const current = els.queueList.querySelector('.retro-ytmp-queue-current');
-      if (current) {
-        try {
-          current.scrollIntoView({ block: 'start', behavior: 'auto' });
-        } catch (_) {
-          els.queueList.scrollTop = current.offsetTop;
-        }
-      }
+      scrollQueueCurrentToTop();
     }
     if (persist) {
       try { chrome.storage.local.set({ queueExpanded }); } catch (_) {}
@@ -446,6 +451,10 @@
 
   els.queueToggle.addEventListener('click', () => {
     setQueueExpanded(!queueExpanded);
+    resizePipToFitContent();
+  });
+
+  els.fit.addEventListener('click', () => {
     resizePipToFitContent();
   });
 
@@ -606,18 +615,43 @@
       win.addEventListener('pagehide', onPipClose, { once: true });
 
       els.compact.textContent = '◱';
-      els.compact.title = 'Close Picture-in-Picture';
+      els.compact.removeAttribute('title');
 
-      try {
-        if (queueExpanded) renderQueue();
+      const computeTargetSize = () => {
         const contentH = Math.max(160, measureOverlayContentHeight());
         const chromeH = Math.max(0, (win.outerHeight || 0) - (win.innerHeight || 0));
-        const targetW = initW;
-        const targetH = contentH + chromeH + PIP_CONTENT_PAD;
-        if (Math.abs(targetH - initH) > 8) {
-          win.resizeTo(targetW, targetH);
+        return { w: initW, h: contentH + chromeH + PIP_CONTENT_PAD };
+      };
+
+      try {
+        if (queueExpanded) {
+          renderQueue();
+          scrollQueueCurrentToTop();
         }
+        const { w, h } = computeTargetSize();
+        try { win.resizeTo(w, h); } catch (_) {}
+        const initScript = win.document.createElement('script');
+        initScript.textContent = `(function(){
+          var w=${w},h=${h};
+          function r(){try{window.resizeTo(w,h);}catch(e){}}
+          r();
+          try{requestAnimationFrame(r);}catch(e){}
+          try{setTimeout(r,0);}catch(e){}
+          window.addEventListener('load',r,{once:true});
+        })();`;
+        win.document.head.appendChild(initScript);
       } catch (_) {}
+
+      const onPipFirstInput = () => {
+        if (!pipWindow) return;
+        try {
+          const { w, h } = computeTargetSize();
+          if (Math.abs(h - win.outerHeight) > 8) {
+            win.resizeTo(w, h);
+          }
+        } catch (_) {}
+      };
+      win.document.addEventListener('pointerdown', onPipFirstInput, { once: true, capture: true });
     } catch (e) {
       console.warn('[retro-ytmp] PiP request failed', e);
       pipWindow = null;
