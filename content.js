@@ -36,11 +36,16 @@
     </div>
     <div class="retro-ytmp-display">
       <div class="retro-ytmp-scanlines"></div>
-      <div class="retro-ytmp-track-wrap">
-        <div class="retro-ytmp-track">—</div>
-      </div>
-      <div class="retro-ytmp-artist-wrap">
-        <div class="retro-ytmp-artist">—</div>
+      <div class="retro-ytmp-meta-row">
+        <img class="retro-ytmp-cover" alt="" style="display:none" />
+        <div class="retro-ytmp-meta-text">
+          <div class="retro-ytmp-track-wrap">
+            <div class="retro-ytmp-track">—</div>
+          </div>
+          <div class="retro-ytmp-artist-wrap">
+            <div class="retro-ytmp-artist">—</div>
+          </div>
+        </div>
       </div>
       <div class="retro-ytmp-time">
         <span class="retro-ytmp-current">0:00</span>
@@ -241,7 +246,49 @@
     queueCount: overlay.querySelector('.retro-ytmp-queue-count'),
     queueList: overlay.querySelector('.retro-ytmp-queue-list'),
     fit: overlay.querySelector('.retro-ytmp-fit'),
+    cover: overlay.querySelector('.retro-ytmp-cover'),
   };
+
+  els.cover.addEventListener('load', () => {
+    if (els.cover.naturalWidth > 1 && els.cover.getAttribute('src')) {
+      els.cover.style.display = '';
+    } else {
+      els.cover.style.display = 'none';
+    }
+  });
+  els.cover.addEventListener('error', () => {
+    els.cover.style.display = 'none';
+  });
+
+  const updateCover = () => {
+    const ytImg = document.querySelector('img.image.style-scope.ytmusic-player-bar');
+    const url = ytImg?.src || '';
+    if (url && els.cover.src !== url) {
+      els.cover.style.display = 'none';
+      els.cover.src = url;
+    } else if (!url) {
+      els.cover.style.display = 'none';
+      els.cover.removeAttribute('src');
+    }
+  };
+
+  let coverObserver = null;
+  let coverObserverTarget = null;
+  const ensureCoverObserver = () => {
+    const img = document.querySelector('img.image.style-scope.ytmusic-player-bar');
+    if (!img || coverObserverTarget === img) return;
+    if (coverObserver) coverObserver.disconnect();
+    coverObserverTarget = img;
+    coverObserver = new MutationObserver(updateCover);
+    coverObserver.observe(img, { attributes: true, attributeFilter: ['src'] });
+    updateCover();
+  };
+  ensureCoverObserver();
+  const coverEnsureId = setInterval(ensureCoverObserver, 5000);
+  cleanups.push(() => {
+    clearInterval(coverEnsureId);
+    if (coverObserver) { try { coverObserver.disconnect(); } catch (_) {} }
+  });
 
   const setText = (node, text) => {
     if (node.textContent !== text) node.textContent = text;
